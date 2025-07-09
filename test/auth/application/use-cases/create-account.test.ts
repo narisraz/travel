@@ -9,14 +9,10 @@ import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { createEmail } from "@/auth/domain/value-objects/Email.js"
 import { describe, expect, it } from "@effect/vitest"
-import { Effect, Exit } from "effect"
+import { Effect, Either, Layer } from "effect"
 
 const email = Effect.runSync(createEmail("test@test.com"))
-const passwordService = ({
-  isValid
-}: {
-  isValid: boolean
-}) => ({
+const passwordService = (isValid: boolean) => ({
   validatePassword: (_: string) => Effect.succeed(isValid),
   hashPassword: (_: string) => Effect.succeed("hashed-password")
 })
@@ -31,13 +27,18 @@ const validPassword = "password"
 const anotherValidPassword = "another-password"
 const invalidPassword = "invalid-password"
 
+const dependencies = ({ isPasswordValid }: { isPasswordValid: boolean }) =>
+  Layer.mergeAll(
+    Layer.succeed(PasswordService, passwordService(isPasswordValid)),
+    Layer.succeed(AccountRepository, accountRepository()),
+    Layer.succeed(IdGenerator, idGenerator())
+  )
+
 describe("CreateAccount", () => {
   it("should create an account", async () => {
     const result = await createAccount(email, validPassword, validPassword)
       .pipe(
-        Effect.provideService(PasswordService, passwordService({ isValid: true })),
-        Effect.provideService(AccountRepository, accountRepository()),
-        Effect.provideService(IdGenerator, idGenerator()),
+        Effect.provide(dependencies({ isPasswordValid: true })),
         Effect.runPromise
       )
 
@@ -47,24 +48,22 @@ describe("CreateAccount", () => {
   it("should not create an account if passwords do not match", () => {
     const result = createAccount(email, validPassword, anotherValidPassword)
       .pipe(
-        Effect.provideService(PasswordService, passwordService({ isValid: true })),
-        Effect.provideService(AccountRepository, accountRepository()),
-        Effect.provideService(IdGenerator, idGenerator()),
-        Effect.runSyncExit
+        Effect.provide(dependencies({ isPasswordValid: true })),
+        Effect.either,
+        Effect.runSync
       )
 
-    expect(result).toStrictEqual(Exit.fail(new PasswordMismatchError({})))
+    expect(result).toStrictEqual(Either.left(new PasswordMismatchError({})))
   })
 
   it("should not create an account if password is not valid", () => {
     const result = createAccount(email, invalidPassword, invalidPassword)
       .pipe(
-        Effect.provideService(PasswordService, passwordService({ isValid: false })),
-        Effect.provideService(AccountRepository, accountRepository()),
-        Effect.provideService(IdGenerator, idGenerator()),
-        Effect.runSyncExit
+        Effect.provide(dependencies({ isPasswordValid: false })),
+        Effect.either,
+        Effect.runSync
       )
 
-    expect(result).toStrictEqual(Exit.fail(new InvalidPasswordError({})))
+    expect(result).toStrictEqual(Either.left(new InvalidPasswordError({})))
   })
 })
