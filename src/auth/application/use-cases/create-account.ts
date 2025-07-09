@@ -1,3 +1,4 @@
+import { createUser } from "@/auth/domain/entities/account.entity.js"
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import type { Email } from "@/auth/domain/value-objects/Email.js"
@@ -21,10 +22,10 @@ function createAccount(email: Email, password: string, confirmPassword: string) 
     }
 
     const hashedPassword = yield* passwordService.hashPassword(password)
+    const account = createUser(email, hashedPassword).pipe(Effect.runSync)
 
     const accountRepository = yield* AccountRepository
-
-    return yield* accountRepository.save({ email, password: hashedPassword })
+    return yield* accountRepository.save(account)
   })
 }
 

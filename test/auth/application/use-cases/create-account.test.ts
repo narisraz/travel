@@ -1,7 +1,7 @@
 import { createAccount } from "@/auth/application/use-cases/create-account.js"
+import type { User } from "@/auth/domain/entities/account.entity.js"
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
-import type { Email } from "@/auth/domain/value-objects/Email.js"
 import { createEmail } from "@/auth/domain/value-objects/Email.js"
 import { describe, expect, it } from "@effect/vitest"
 import { Effect } from "effect"
@@ -16,10 +16,7 @@ const passwordService = ({
   hashPassword: (_: string) => Effect.succeed("hashed-password")
 })
 const accountRepository = () => ({
-  save: (account: {
-    readonly email: Email
-    readonly password: string
-  }) => Effect.promise(() => Promise.resolve(account))
+  save: (account: User) => Effect.promise(() => Promise.resolve(account))
 })
 const validPassword = "password"
 const anotherValidPassword = "another-password"
