@@ -5,4 +5,4 @@ export interface IdGenerator {
   next: () => Effect.Effect<string, never, never>
 }
 
-export const IdGenerator = Context.Tag("IdGenerator")<IdGenerator, IdGenerator>()
+export const IdGenerator = Context.GenericTag<IdGenerator>("IdGenerator")

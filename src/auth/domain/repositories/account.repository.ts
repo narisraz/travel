@@ -6,4 +6,4 @@ export interface AccountRepository {
   save: (account: User) => Effect.Effect<User, never, never>
 }
 
-export const AccountRepository = Context.Tag("AccountRepository")<AccountRepository, AccountRepository>()
+export const AccountRepository = Context.GenericTag<AccountRepository>("AccountRepository")

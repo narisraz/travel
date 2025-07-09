@@ -6,4 +6,4 @@ export interface PasswordService {
   hashPassword: (password: string) => Effect.Effect<string, never, never>
 }
 
-export const PasswordService = Context.Tag("PasswordService")<PasswordService, PasswordService>()
+export const PasswordService = Context.GenericTag<PasswordService>("PasswordService")
