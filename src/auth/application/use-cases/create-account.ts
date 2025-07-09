@@ -1,15 +1,22 @@
+import { PasswordService } from "@/auth/application/services/password.service.js"
 import type { Email } from "@/auth/domain/value-objects/Email.js"
+import { Effect } from "effect"
 
 function createAccount(email: Email, password: string, confirmPassword: string) {
-  if (password !== confirmPassword) {
-    return false
-  }
+  return Effect.gen(function*() {
+    const passwordService = yield* PasswordService
 
-  if (password.length < 8) {
-    return false
-  }
+    const isPasswordValid = yield* passwordService.validatePassword(password)
+    if (!isPasswordValid) {
+      return false
+    }
 
-  return true
+    if (password !== confirmPassword) {
+      return false
+    }
+
+    return true
+  })
 }
 
 export { createAccount }
