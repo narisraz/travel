@@ -1,5 +1,6 @@
 import { createUser } from "@/auth/domain/entities/account.entity.js"
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
+import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import type { Email } from "@/auth/domain/value-objects/Email.js"
 import { Data, Effect } from "effect"
@@ -21,8 +22,11 @@ function createAccount(email: Email, password: string, confirmPassword: string) 
       return yield* Effect.fail(new PasswordMismatchError({}))
     }
 
+    const idGenerator = yield* IdGenerator
+    const id = yield* idGenerator.next()
+
     const hashedPassword = yield* passwordService.hashPassword(password)
-    const account = createUser(email, hashedPassword).pipe(Effect.runSync)
+    const account = createUser(id, email, hashedPassword).pipe(Effect.runSync)
 
     const accountRepository = yield* AccountRepository
     return yield* accountRepository.save(account)
