@@ -1,11 +1,15 @@
-import { createAccount } from "@/auth/application/use-cases/create-account.js"
+import {
+  createAccount,
+  InvalidPasswordError,
+  PasswordMismatchError
+} from "@/auth/application/use-cases/create-account.js"
 import type { User } from "@/auth/domain/entities/account.entity.js"
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
 import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { createEmail } from "@/auth/domain/value-objects/Email.js"
 import { describe, expect, it } from "@effect/vitest"
-import { Effect } from "effect"
+import { Effect, Exit } from "effect"
 
 const email = Effect.runSync(createEmail("test@test.com"))
 const passwordService = ({
@@ -49,7 +53,7 @@ describe("CreateAccount", () => {
         Effect.runSyncExit
       )
 
-    expect(result._tag).toBe("Failure")
+    expect(result).toStrictEqual(Exit.fail(new PasswordMismatchError({})))
   })
 
   it("should not create an account if password is not valid", () => {
@@ -61,6 +65,6 @@ describe("CreateAccount", () => {
         Effect.runSyncExit
       )
 
-    expect(result._tag).toBe("Failure")
+    expect(result).toStrictEqual(Exit.fail(new InvalidPasswordError({})))
   })
 })
