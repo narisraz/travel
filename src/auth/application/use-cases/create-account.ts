@@ -1,6 +1,11 @@
-import { PasswordService } from "@/auth/application/services/password.service.js"
+import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
+import { PasswordService } from "@/auth/domain/services/password.service.js"
 import type { Email } from "@/auth/domain/value-objects/Email.js"
-import { Effect } from "effect"
+import { Data, Effect } from "effect"
+
+export class InvalidPasswordError extends Data.TaggedError("InvalidPasswordError")<object> {}
+
+export class PasswordMismatchError extends Data.TaggedError("PasswordMismatchError")<object> {}
 
 function createAccount(email: Email, password: string, confirmPassword: string) {
   return Effect.gen(function*() {
@@ -8,14 +13,18 @@ function createAccount(email: Email, password: string, confirmPassword: string) 
 
     const isPasswordValid = yield* passwordService.validatePassword(password)
     if (!isPasswordValid) {
-      return false
+      return yield* Effect.fail(new InvalidPasswordError({}))
     }
 
     if (password !== confirmPassword) {
-      return false
+      return yield* Effect.fail(new PasswordMismatchError({}))
     }
 
-    return true
+    const hashedPassword = yield* passwordService.hashPassword(password)
+
+    const accountRepository = yield* AccountRepository
+
+    return yield* accountRepository.save({ email, password: hashedPassword })
   })
 }
 
