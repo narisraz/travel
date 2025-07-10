@@ -8,8 +8,8 @@ import { AccountRepository } from "@/auth/domain/repositories/account.repository
 import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { createEmail } from "@/auth/domain/value-objects/Email.js"
-import { describe, expect, it } from "@effect/vitest"
-import { Effect, Either, Layer } from "effect"
+import { describe, expect, test } from "@effect/vitest"
+import { Effect, Exit, Layer, pipe } from "effect"
 
 const email = Effect.runSync(createEmail("test@test.com"))
 const passwordService = (isValid: boolean) => ({
@@ -35,35 +35,36 @@ const dependencies = ({ isPasswordValid }: { isPasswordValid: boolean }) =>
   )
 
 describe("CreateAccount", () => {
-  it("should create an account", async () => {
-    const result = await createAccount(email, validPassword, validPassword)
-      .pipe(
-        Effect.provide(dependencies({ isPasswordValid: true })),
-        Effect.runPromise
-      )
+  test("should create an account", () =>
+    pipe(
+      Effect.gen(function*() {
+        const result = yield* createAccount(email, validPassword, validPassword)
 
-    expect(result).toStrictEqual({ id: "id", email, password: "hashed-password" })
-  })
+        expect(result).toStrictEqual({ id: "id", email, password: "hashed-password" })
+      }),
+      Effect.provide(dependencies({ isPasswordValid: true })),
+      Effect.runPromise
+    ))
 
-  it("should not create an account if passwords do not match", () => {
-    const result = createAccount(email, validPassword, anotherValidPassword)
-      .pipe(
-        Effect.provide(dependencies({ isPasswordValid: true })),
-        Effect.either,
-        Effect.runSync
-      )
+  test("should not create an account if passwords do not match", () =>
+    pipe(
+      Effect.gen(function*() {
+        const result = yield* createAccount(email, validPassword, anotherValidPassword)
 
-    expect(result).toStrictEqual(Either.left(new PasswordMismatchError({})))
-  })
+        expect(result).toStrictEqual(Exit.fail(new PasswordMismatchError({})))
+      }),
+      Effect.provide(dependencies({ isPasswordValid: true })),
+      Effect.runPromiseExit
+    ))
 
-  it("should not create an account if password is not valid", () => {
-    const result = createAccount(email, invalidPassword, invalidPassword)
-      .pipe(
-        Effect.provide(dependencies({ isPasswordValid: false })),
-        Effect.either,
-        Effect.runSync
-      )
+  test("should not create an account if password is not valid", () =>
+    pipe(
+      Effect.gen(function*() {
+        const result = yield* createAccount(email, invalidPassword, invalidPassword)
 
-    expect(result).toStrictEqual(Either.left(new InvalidPasswordError({})))
-  })
+        expect(result).toStrictEqual(Exit.fail(new InvalidPasswordError({})))
+      }),
+      Effect.provide(dependencies({ isPasswordValid: false })),
+      Effect.runPromiseExit
+    ))
 })
