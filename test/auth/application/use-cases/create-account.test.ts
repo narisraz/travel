@@ -9,7 +9,7 @@ import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { createEmail } from "@/auth/domain/value-objects/Email.js"
 import { describe, expect, test } from "@effect/vitest"
-import { Effect, Either, Layer, pipe } from "effect"
+import { Effect, Exit, Layer, pipe } from "effect"
 
 const email = Effect.runSync(createEmail("test@test.com"))
 const passwordService = (isValid: boolean) => ({
@@ -61,11 +61,11 @@ describe("CreateAccount", () => {
           confirmPassword: anotherValidPassword
         }
 
-        const result = yield* Effect.either(createAccount(request))
+        const result = yield* Effect.exit(createAccount(request))
 
-        if (Either.isLeft(result)) {
-          expect(result.left).instanceOf(PasswordMismatchError)
-        }
+        Exit.mapError(result, (error) => {
+          expect(error).instanceOf(PasswordMismatchError)
+        })
       }),
       Effect.provide(dependencies({ isPasswordValid: true })),
       Effect.runPromise
@@ -80,11 +80,11 @@ describe("CreateAccount", () => {
           confirmPassword: invalidPassword
         }
 
-        const result = yield* Effect.either(createAccount(request))
+        const result = yield* Effect.exit(createAccount(request))
 
-        if (Either.isLeft(result)) {
-          expect(result.left).instanceOf(InvalidPasswordError)
-        }
+        Exit.mapError(result, (error) => {
+          expect(error).instanceOf(InvalidPasswordError)
+        })
       }),
       Effect.provide(dependencies({ isPasswordValid: false })),
       Effect.runPromise
