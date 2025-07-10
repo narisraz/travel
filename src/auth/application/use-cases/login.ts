@@ -26,9 +26,9 @@ function login(request: LoginRequest): LoginResult {
     yield* Effect.fail(new AccountNotFoundError({})).pipe(Effect.unless(() => account !== null))
 
     const passwordService = yield* PasswordService
-    const hashedPassword = yield* passwordService.hashPassword(request.password)
+    const isPasswordValid = yield* passwordService.comparePassword(request.password, account!.password)
 
-    yield* Effect.fail(new BadCredentialsError({})).pipe(Effect.unless(() => account!.password === hashedPassword))
+    yield* Effect.fail(new BadCredentialsError({})).pipe(Effect.unless(() => isPasswordValid))
 
     const tokenService = yield* TokenService
     const token = yield* tokenService.generateToken(account!.id)

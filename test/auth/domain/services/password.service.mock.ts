@@ -19,6 +19,14 @@ class LivePasswordService implements PasswordService {
       return currentHashedPassword
     })
   }
+
+  comparePassword(_: string, hashedPassword: string): Effect.Effect<boolean> {
+    const hashedPasswordRef = this.hashedPassword
+    return Effect.gen(function*() {
+      const currentHashedPassword = yield* Ref.get(hashedPasswordRef)
+      return currentHashedPassword === hashedPassword
+    })
+  }
 }
 
 const createPasswordService = (isValid: boolean, hashedPassword: string) =>

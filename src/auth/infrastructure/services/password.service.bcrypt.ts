@@ -17,6 +17,14 @@ export class BcryptPasswordService implements PasswordService {
       Effect.catchAll(() => Effect.succeed(""))
     )
 
+  comparePassword = (password: string, hashedPassword: string): Effect.Effect<boolean, never, never> =>
+    Effect.tryPromise({
+      try: () => bcrypt.compare(password, hashedPassword),
+      catch: () => new Error("Failed to compare password")
+    }).pipe(
+      Effect.catchAll(() => Effect.succeed(false))
+    )
+
   private isPasswordValid(password: string): boolean {
     // Validation des critères de base :
     // - Au moins 8 caractères
