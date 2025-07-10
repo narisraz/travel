@@ -1,0 +1,165 @@
+# Layers Effect pour la Persistence
+
+## Structure Standard
+
+### Configuration des Layers
+
+```typescript
+// src/auth/infrastructure/persistence/layer.ts
+import { Effect, Layer } from "effect";
+import { AccountRepository } from "@/auth/domain/repositories/account.repository.js";
+import { createDatabase } from "./database.js";
+import { createSQLiteAccountRepository } from "./account.repository.sqlite.js";
+
+export const SQLiteAccountRepositoryLayer = Layer.effect(
+  AccountRepository,
+  Effect.gen(function* () {
+    const database = yield* createDatabase();
+    yield* database.initialize();
+    return createSQLiteAccountRepository(database);
+  })
+);
+```
+
+## Patterns Obligatoires
+
+### 1. Nommage des Layers
+
+- Pattern : `{Technology}{Entity}Repository{Layer}`
+- Exemples : `SQLiteAccountRepositoryLayer`, `PostgreSQLUserRepositoryLayer`
+
+### 2. Variants avec Configuration
+
+- Layer par défaut (mémoire) : `SQLiteAccountRepositoryLayer`
+- Layer avec chemin : `SQLiteAccountRepositoryLayerWithPath(dbPath: string)`
+
+```typescript
+export const SQLiteAccountRepositoryLayerWithPath = (dbPath: string) =>
+  Layer.effect(
+    AccountRepository,
+    Effect.gen(function* () {
+      const database = yield* createDatabase(dbPath);
+      yield* database.initialize();
+      return createSQLiteAccountRepository(database);
+    })
+  );
+```
+
+### 3. Gestion des Ressources
+
+- **TOUJOURS** initialiser la base de données dans le layer
+- **JAMAIS** oublier d'appeler `database.initialize()`
+- Utiliser `Effect.gen` pour la lisibilité
+
+```typescript
+// ✅ Correct
+export const SQLiteAccountRepositoryLayer = Layer.effect(
+  AccountRepository,
+  Effect.gen(function* () {
+    const database = yield* createDatabase();
+    yield* database.initialize(); // Important !
+    return createSQLiteAccountRepository(database);
+  })
+);
+
+// ❌ Incorrect - base de données non initialisée
+export const SQLiteAccountRepositoryLayer = Layer.effect(
+  AccountRepository,
+  Effect.gen(function* () {
+    const database = yield* createDatabase();
+    return createSQLiteAccountRepository(database);
+  })
+);
+```
+
+## Utilisation dans les HTTP Layers
+
+### Intégration avec les Layers HTTP
+
+```typescript
+// src/auth/presentation/http/shared/http-layer.ts
+import { Layer } from "effect";
+import { SQLiteAccountRepositoryLayer } from "@/auth/infrastructure/persistence/layer.js";
+
+export const httpLayer = Layer.mergeAll(
+  SQLiteAccountRepositoryLayer
+  // Autres services...
+);
+```
+
+### Composition de Layers
+
+```typescript
+// Composition de plusieurs layers de persistence
+export const persistenceLayer = Layer.mergeAll(
+  SQLiteAccountRepositoryLayer,
+  SQLiteProfileRepositoryLayer
+  // Autres repositories...
+);
+```
+
+## Tests avec Layers
+
+### Layer de Test
+
+```typescript
+// test/auth/infrastructure/persistence/test-layer.ts
+export const testPersistenceLayer = Layer.mergeAll(
+  SQLiteAccountRepositoryLayer // Utilise base de données en mémoire
+  // Autres test layers...
+);
+```
+
+### Utilisation dans les Tests
+
+```typescript
+// Dans les tests
+const testProgram = Effect.gen(function* () {
+  const accountRepository = yield* AccountRepository;
+  // Test logic...
+}).pipe(Effect.provide(testPersistenceLayer));
+
+const result = await Effect.runPromise(testProgram);
+```
+
+## Bonnes Pratiques
+
+### 1. Séparation des Responsabilités
+
+- Un layer par repository
+- Composition via `Layer.mergeAll`
+- Configuration externalisée
+
+### 2. Environment Variables
+
+```typescript
+// Configuration avec variables d'environnement
+export const SQLiteAccountRepositoryLayerFromEnv = Layer.effect(
+  AccountRepository,
+  Effect.gen(function* () {
+    const dbPath = process.env.DATABASE_PATH ?? ":memory:";
+    const database = yield* createDatabase(dbPath);
+    yield* database.initialize();
+    return createSQLiteAccountRepository(database);
+  })
+);
+```
+
+### 3. Gestion des Erreurs
+
+- Les layers ne doivent jamais échouer
+- Utiliser des valeurs par défaut si nécessaire
+- Logger les erreurs de configuration
+
+```typescript
+export const SQLiteAccountRepositoryLayer = Layer.effect(
+  AccountRepository,
+  Effect.gen(function* () {
+    const database = yield* createDatabase().pipe(
+      Effect.catchAll(() => createDatabase(":memory:"))
+    );
+    yield* database.initialize();
+    return createSQLiteAccountRepository(database);
+  })
+);
+```

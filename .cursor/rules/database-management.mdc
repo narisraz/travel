@@ -1,0 +1,243 @@
+# Gestion de la Base de Données
+
+## Structure Standard
+
+### Interface Database
+
+```typescript
+// src/auth/infrastructure/persistence/database.ts
+export interface SQLiteDatabase {
+  readonly db: Database.Database;
+  readonly close: () => Effect.Effect<void, never, never>;
+  readonly initialize: () => Effect.Effect<void, never, never>;
+}
+```
+
+### Factory Function
+
+```typescript
+export const createDatabase = (
+  path: string = ":memory:"
+): Effect.Effect<SQLiteDatabase, never, never> =>
+  Effect.sync(() => {
+    const db = new Database(path);
+
+    const initialize = () =>
+      Effect.sync(() => {
+        // Création des tables
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
+        // Création des index
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
+        `);
+      });
+
+    const close = () =>
+      Effect.sync(() => {
+        db.close();
+      });
+
+    return {
+      db,
+      close,
+      initialize,
+    };
+  });
+```
+
+## Patterns Obligatoires
+
+### 1. Configuration par Défaut
+
+- **TOUJOURS** utiliser `:memory:` comme valeur par défaut
+- Permet les tests sans fichier de base de données
+- Production utilisera un chemin de fichier
+
+```typescript
+// ✅ Correct
+export const createDatabase = (path: string = ":memory:") => {
+  // ...
+};
+
+// ❌ Incorrect - pas de valeur par défaut
+export const createDatabase = (path: string) => {
+  // ...
+};
+```
+
+### 2. Initialisation Explicite
+
+- **JAMAIS** initialiser automatiquement dans le factory
+- **TOUJOURS** fournir une méthode `initialize()` séparée
+- Permet le contrôle de l'initialisation
+
+```typescript
+// ✅ Correct
+const initialize = () =>
+  Effect.sync(() => {
+    // Création des tables
+  });
+
+// ❌ Incorrect - initialisation automatique
+export const createDatabase = (path: string = ":memory:") =>
+  Effect.sync(() => {
+    const db = new Database(path);
+
+    // Création automatique des tables - NON !
+    db.exec(`CREATE TABLE...`);
+
+    return { db, close, initialize };
+  });
+```
+
+### 3. Gestion des Ressources
+
+- **TOUJOURS** fournir une méthode `close()`
+- **JAMAIS** oublier de fermer la base de données
+- Utiliser `Effect.sync` pour les opérations synchrones
+
+```typescript
+const close = () =>
+  Effect.sync(() => {
+    db.close();
+  });
+```
+
+## Schémas de Base de Données
+
+### Conventions SQL
+
+- **TOUJOURS** utiliser `CREATE TABLE IF NOT EXISTS`
+- **TOUJOURS** utiliser `CREATE INDEX IF NOT EXISTS`
+- Ajouter `created_at` avec `CURRENT_TIMESTAMP`
+
+```sql
+-- ✅ Correct
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ❌ Incorrect - pas de IF NOT EXISTS
+CREATE TABLE users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL
+);
+```
+
+### Index Obligatoires
+
+- **TOUJOURS** créer des index sur les colonnes de recherche
+- Nommage : `idx_{table}_{column}`
+
+```sql
+-- Index sur email pour les recherches
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Index composé si nécessaire
+CREATE INDEX IF NOT EXISTS idx_users_email_status ON users(email, status);
+```
+
+## Migration et Évolution
+
+### Stratégie de Migration
+
+```typescript
+const initialize = () =>
+  Effect.sync(() => {
+    // Version 1 - Tables initiales
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Version 2 - Ajout de colonnes (exemple)
+    db.exec(`
+      ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'
+    `);
+
+    // Index
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
+    `);
+  });
+```
+
+### Gestion des Versions
+
+```typescript
+// Optionnel : Table de version de schéma
+const initializeVersioning = () =>
+  Effect.sync(() => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS schema_version (
+        version INTEGER PRIMARY KEY,
+        applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  });
+```
+
+## Tests et Développement
+
+### Configuration de Test
+
+```typescript
+// Pour les tests - toujours en mémoire
+const testDatabase = createDatabase(); // Utilise ":memory:"
+
+// Pour le développement local
+const devDatabase = createDatabase("./dev.sqlite");
+
+// Pour la production
+const prodDatabase = createDatabase(process.env.DATABASE_PATH!);
+```
+
+### Nettoyage dans les Tests
+
+```typescript
+// Dans les tests
+afterEach(async () => {
+  await Effect.runPromise(
+    Effect.gen(function* () {
+      const database = yield* createDatabase();
+      yield* database.close();
+    })
+  );
+});
+```
+
+## Bonnes Pratiques
+
+### 1. Sécurité
+
+- **JAMAIS** de SQL dynamique sans prepared statements
+- **TOUJOURS** utiliser des paramètres bindés
+- Validation des données d'entrée
+
+### 2. Performance
+
+- Créer des index sur les colonnes fréquemment recherchées
+- Utiliser `EXPLAIN QUERY PLAN` pour optimiser
+- Considérer `PRAGMA` pour les optimisations SQLite
+
+### 3. Maintenance
+
+- Documenter les changements de schéma
+- Prévoir une stratégie de backup
+- Monitorer la taille de la base de données

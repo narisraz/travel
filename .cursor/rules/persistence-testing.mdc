@@ -1,0 +1,293 @@
+# Tests de Persistence
+
+## Structure des Tests
+
+### Organisation des Fichiers
+
+```
+test/
+└── auth/
+    └── infrastructure/
+        └── persistence/
+            ├── account.repository.sqlite.test.ts
+            ├── database.test.ts
+            └── layer.test.ts
+```
+
+### Nommage des Tests
+
+- Repository : `{Entity}.repository.{Technology}.test.ts`
+- Database : `database.test.ts`
+- Layers : `layer.test.ts`
+
+## Patterns Standard
+
+### Test de Repository
+
+```typescript
+import { Effect } from "effect";
+import { describe, it, expect } from "vitest";
+import { createDatabase } from "@/auth/infrastructure/persistence/database.js";
+import { createSQLiteAccountRepository } from "@/auth/infrastructure/persistence/account.repository.sqlite.js";
+import { createUser } from "@/auth/domain/entities/account.entity.js";
+import { createEmail } from "@/auth/domain/value-objects/Email.js";
+
+describe("SQLiteAccountRepository", () => {
+  it("should save and retrieve a user", async () => {
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        // Créer une base de données en mémoire
+        const database = yield* createDatabase();
+        yield* database.initialize();
+
+        // Créer le repository
+        const repository = createSQLiteAccountRepository(database);
+
+        // Créer un utilisateur de test
+        const email = yield* createEmail("test@example.com");
+        const user = yield* createUser("test-id", email, "password123");
+
+        // Sauvegarder l'utilisateur
+        yield* repository.save(user);
+
+        // Récupérer l'utilisateur par email
+        const retrievedUser = yield* repository.findByEmail(email);
+
+        return { user, retrievedUser };
+      })
+    );
+
+    expect(result.retrievedUser).toEqual(result.user);
+  });
+});
+```
+
+## Patterns Obligatoires
+
+### 1. Base de Données en Mémoire
+
+- **TOUJOURS** utiliser `:memory:` pour les tests
+- **JAMAIS** utiliser de fichiers de base de données dans les tests
+- **TOUJOURS** créer une nouvelle base pour chaque test
+
+```typescript
+// ✅ Correct
+const database = yield * createDatabase(); // Utilise ":memory:"
+
+// ❌ Incorrect - fichier de base de données
+const database = yield * createDatabase("./test.sqlite");
+```
+
+### 2. Initialisation Explicite
+
+- **TOUJOURS** appeler `database.initialize()` dans les tests
+- **JAMAIS** oublier l'initialisation
+- Vérifier que les tables sont créées
+
+```typescript
+// ✅ Correct
+const database = yield * createDatabase();
+yield * database.initialize();
+
+// ❌ Incorrect - pas d'initialisation
+const database = yield * createDatabase();
+const repository = createSQLiteAccountRepository(database);
+```
+
+### 3. Gestion des Ressources
+
+- **TOUJOURS** fermer les bases de données si nécessaire
+- Utiliser `afterEach` pour le nettoyage
+- Éviter les fuites de mémoire
+
+```typescript
+// Optionnel : nettoyage explicite
+afterEach(async () => {
+  await Effect.runPromise(
+    Effect.gen(function* () {
+      const database = yield* createDatabase();
+      yield* database.close();
+    })
+  );
+});
+```
+
+## Scénarios de Test Standard
+
+### 1. CRUD Operations
+
+```typescript
+describe("CRUD Operations", () => {
+  it("should create a user", async () => {
+    // Test de création
+  });
+
+  it("should read a user by email", async () => {
+    // Test de lecture
+  });
+
+  it("should update a user", async () => {
+    // Test de mise à jour
+  });
+
+  it("should delete a user", async () => {
+    // Test de suppression
+  });
+});
+```
+
+### 2. Edge Cases
+
+```typescript
+describe("Edge Cases", () => {
+  it("should return null for non-existent email", async () => {
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        const database = yield* createDatabase();
+        yield* database.initialize();
+        const repository = createSQLiteAccountRepository(database);
+
+        const email = yield* createEmail("nonexistent@example.com");
+        const user = yield* repository.findByEmail(email);
+
+        return user;
+      })
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it("should handle duplicate emails gracefully", async () => {
+    // Test de gestion des doublons
+  });
+
+  it("should handle empty results", async () => {
+    // Test de résultats vides
+  });
+});
+```
+
+### 3. Data Integrity
+
+```typescript
+describe("Data Integrity", () => {
+  it("should maintain data consistency", async () => {
+    // Test de cohérence des données
+  });
+
+  it("should validate constraints", async () => {
+    // Test des contraintes de base de données
+  });
+
+  it("should handle concurrent access", async () => {
+    // Test d'accès concurrent
+  });
+});
+```
+
+## Tests avec Layers
+
+### Test de Layer
+
+```typescript
+describe("SQLiteAccountRepositoryLayer", () => {
+  it("should provide a working repository", async () => {
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        const accountRepository = yield* AccountRepository;
+
+        // Test avec le repository fourni par le layer
+        const users = yield* accountRepository.getAll();
+
+        return users;
+      }).pipe(Effect.provide(SQLiteAccountRepositoryLayer))
+    );
+
+    expect(result).toEqual([]);
+  });
+});
+```
+
+### Test d'Intégration
+
+```typescript
+describe("Integration Tests", () => {
+  it("should work with complete application layer", async () => {
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        // Test avec tous les layers
+        const accountRepository = yield* AccountRepository;
+        const idGenerator = yield* IdGenerator;
+
+        // Test d'intégration complet
+        const id = yield* idGenerator.next();
+        const email = yield* createEmail("integration@test.com");
+        const user = yield* createUser(id, email, "password");
+
+        yield* accountRepository.save(user);
+        const retrieved = yield* accountRepository.findByEmail(email);
+
+        return retrieved;
+      }).pipe(Effect.provide(testLayer))
+    );
+
+    expect(result).toBeDefined();
+  });
+});
+```
+
+## Bonnes Pratiques
+
+### 1. Test Isolation
+
+- Chaque test doit être indépendant
+- Pas de dépendances entre tests
+- Utiliser des données de test uniques
+
+### 2. Données de Test
+
+- Utiliser des factory functions pour créer des données
+- Données réalistes mais prévisibles
+- Éviter les données hardcodées
+
+```typescript
+// Helper function pour créer des utilisateurs de test
+const createTestUser = (suffix: string = "") =>
+  Effect.gen(function* () {
+    const email = yield* createEmail(`test${suffix}@example.com`);
+    const user = yield* createUser(`test-id-${suffix}`, email, "password123");
+    return user;
+  });
+```
+
+### 3. Assertions
+
+- Vérifier les valeurs exactes, pas seulement l'existence
+- Tester les cas d'erreur
+- Utiliser des matchers appropriés
+
+```typescript
+// ✅ Correct - vérification exacte
+expect(result.retrievedUser).toEqual(result.user);
+
+// ❌ Incorrect - vérification trop vague
+expect(result.retrievedUser).toBeDefined();
+```
+
+### 4. Performance
+
+- Mesurer les temps de réponse si nécessaire
+- Tester avec des volumes de données réalistes
+- Éviter les tests trop longs
+
+```typescript
+it("should handle large datasets efficiently", async () => {
+  // Test de performance avec beaucoup de données
+  const start = Date.now();
+
+  // Test logic...
+
+  const duration = Date.now() - start;
+  expect(duration).toBeLessThan(1000); // Moins d'1 seconde
+});
+```

@@ -1,0 +1,123 @@
+---
+globs: "src/*/infrastructure/persistence/*.repository.*.ts"
+description: "Patterns et conventions pour les repositories"
+---
+
+# Patterns des Repositories
+
+## Conventions de Nommage
+
+### Fichiers
+
+- Interface domaine : `*.repository.ts`
+- Implémentation : `*.repository.sqlite.ts` (ou autre technologie)
+- Factory : `createSQLiteAccountRepository`
+
+### Classes et Interfaces
+
+- Interface : `AccountRepository`
+- Implémentation : `SQLiteAccountRepository`
+
+## Structure Standard
+
+### Interface Domaine
+
+```typescript
+// src/auth/domain/repositories/account.repository.ts
+export interface AccountRepository {
+  save: (account: User) => Effect.Effect<void, never, never>;
+  getAll: () => Effect.Effect<Array<User>, never, never>;
+  findByEmail: (email: Email) => Effect.Effect<User | null, never, never>;
+}
+
+export const AccountRepository =
+  Context.GenericTag<AccountRepository>("AccountRepository");
+```
+
+### Implémentation
+
+```typescript
+// src/auth/infrastructure/persistence/account.repository.sqlite.ts
+export class SQLiteAccountRepository implements AccountRepository {
+  constructor(private readonly database: SQLiteDatabase) {}
+
+  save = (account: User): Effect.Effect<void, never, never> =>
+    Effect.try(() => {
+      const stmt = this.database.db.prepare(`
+        INSERT OR REPLACE INTO users (id, email, password)
+        VALUES (?, ?, ?)
+      `);
+      stmt.run(account.id, account.email, account.password);
+    }).pipe(Effect.catchAll(() => Effect.succeed(void 0)));
+
+  // Autres méthodes...
+}
+```
+
+## Patterns Obligatoires
+
+### 1. Gestion des Erreurs
+
+- **TOUJOURS** retourner `Effect.Effect<T, never, never>`
+- **JAMAIS** laisser d'erreurs non gérées
+- Utiliser `Effect.catchAll()` pour transformer les erreurs en succès
+
+```typescript
+// ✅ Correct
+findByEmail = (email: Email): Effect.Effect<User | null, never, never> =>
+  Effect.try(() => {
+    // Logique de base de données
+  }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+
+// ❌ Incorrect - peut lever des erreurs
+findByEmail = (email: Email): Effect.Effect<User | null, Error, never> =>
+  Effect.try(() => {
+    // Logique de base de données
+  });
+```
+
+### 2. Factory Functions
+
+- Toujours fournir une factory function pour créer les repositories
+- Nommage : `create{Technology}{Entity}Repository`
+
+```typescript
+export const createSQLiteAccountRepository = (
+  database: SQLiteDatabase
+): AccountRepository => new SQLiteAccountRepository(database);
+```
+
+### 3. Dependency Injection
+
+- Injecter la base de données via le constructeur
+- Utiliser des interfaces pour les dépendances
+
+```typescript
+export class SQLiteAccountRepository implements AccountRepository {
+  constructor(private readonly database: SQLiteDatabase) {}
+  // ...
+}
+```
+
+## Tests
+
+### Structure des Tests
+
+```typescript
+// test/auth/infrastructure/persistence/account.repository.sqlite.test.ts
+describe("SQLiteAccountRepository", () => {
+  it("should save and retrieve a user", async () => {
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        const database = yield* createDatabase();
+        yield* database.initialize();
+        const repository = createSQLiteAccountRepository(database);
+
+        // Test logic...
+      })
+    );
+
+    expect(result).toEqual(expected);
+  });
+});
+```

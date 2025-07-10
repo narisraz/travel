@@ -1,0 +1,72 @@
+---
+alwaysApply: true
+description: "Architecture de persistence et patterns infrastructure"
+---
+
+# Architecture de Persistence
+
+## Structure des Dossiers
+
+```
+src/
+├── auth/
+│   ├── infrastructure/
+│   │   └── persistence/
+│   │       ├── database.ts           # Configuration DB
+│   │       ├── *.repository.sqlite.ts # Implémentations repositories
+│   │       ├── layer.ts              # Layers Effect
+│   │       └── index.ts              # Exports publics
+└── test/
+    └── auth/
+        └── infrastructure/
+            └── persistence/
+                └── *.test.ts         # Tests d'intégration
+```
+
+## Principes Architecturaux
+
+### 1. Découplage de la Technologie
+
+- Les repositories implémentent des interfaces du domaine
+- La technologie de persistence (SQLite, PostgreSQL, etc.) est isolée
+- Les couches supérieures ne connaissent que les interfaces
+
+### 2. Injection de Dépendances avec Effect
+
+- Utilisation des **Layers Effect** pour l'injection de dépendances
+- Les repositories sont fournis via le système de Context d'Effect
+- Configuration centralisée dans [layer.ts](mdc:src/auth/infrastructure/persistence/layer.ts)
+
+### 3. Gestion des Erreurs
+
+- Tous les effets retournent `Effect.Effect<T, never, never>`
+- Les erreurs sont capturées et transformées en succès avec valeurs par défaut
+- Pas d'exceptions non gérées dans la couche persistence
+
+## Exemples d'Usage
+
+### Implémentation Repository
+
+```typescript
+// account.repository.sqlite.ts
+export class SQLiteAccountRepository implements AccountRepository {
+  save = (account: User): Effect.Effect<void, never, never> =>
+    Effect.try(() => {
+      // Logique SQLite
+    }).pipe(Effect.catchAll(() => Effect.succeed(void 0)));
+}
+```
+
+### Configuration Layer
+
+```typescript
+// layer.ts
+export const SQLiteAccountRepositoryLayer = Layer.effect(
+  AccountRepository,
+  Effect.gen(function* () {
+    const database = yield* createDatabase();
+    yield* database.initialize();
+    return createSQLiteAccountRepository(database);
+  })
+);
+```
