@@ -25,10 +25,16 @@
     "test": "vitest",
     "coverage": "vitest --coverage",
     "changeset-version": "changeset version && node scripts/version.mjs",
-    "changeset-publish": "pnpm build && TEST_DIST= pnpm vitest && changeset publish"
+    "changeset-publish": "pnpm build && TEST_DIST= pnpm vitest && changeset publish",
+    "dev": "tsx src/http/main.ts",
+    "start": "tsx src/http/main.ts"
   },
   "dependencies": {
-    "effect": "latest"
+    "@hono/node-server": "^1.15.0",
+    "@hono/zod-validator": "^0.7.0",
+    "effect": "latest",
+    "hono": "^4.8.4",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@babel/cli": "^7.24.8",
