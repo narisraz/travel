@@ -1,18 +1,26 @@
 import type { User } from "@/auth/domain/entities/account.entity.js"
 import type { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
-import { Effect } from "effect"
+import { Effect, Ref } from "effect"
 
 class LiveAccountRepository implements AccountRepository {
-  private accounts: Array<User> = []
+  constructor(private accounts: Ref.Ref<Array<User>>) {}
 
-  save(account: User): Effect.Effect<User> {
-    this.accounts.push(account)
-    return Effect.succeed(account)
+  save = (account: User) => {
+    const accounts = this.accounts
+    return Effect.gen(function*() {
+      yield* Ref.update(accounts, (currentAccounts) => [...currentAccounts, account])
+    })
   }
 
   getAll(): Effect.Effect<Array<User>> {
-    return Effect.succeed(this.accounts)
+    return Ref.get(this.accounts)
   }
 }
 
-export { LiveAccountRepository }
+const createAccountRepository = (accounts: Array<User>) =>
+  Effect.gen(function*() {
+    const ref = yield* Ref.make(accounts)
+    return new LiveAccountRepository(ref)
+  })
+
+export { createAccountRepository }

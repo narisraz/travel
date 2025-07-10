@@ -1,22 +1,31 @@
 import type { PasswordService } from "@/auth/domain/services/password.service.js"
-import { Effect } from "effect"
+import { Effect, Ref } from "effect"
 
 class LivePasswordService implements PasswordService {
-  private isValid: boolean
-  private hashedPassword: string
-
-  constructor(isValid: boolean, hashedPassword: string) {
-    this.isValid = isValid
-    this.hashedPassword = hashedPassword
-  }
+  constructor(private isValid: Ref.Ref<boolean>, private hashedPassword: Ref.Ref<string>) {}
 
   validatePassword(_: string): Effect.Effect<boolean> {
-    return Effect.succeed(this.isValid)
+    const isValid = this.isValid
+    return Effect.gen(function*() {
+      const currentIsValid = yield* Ref.get(isValid)
+      return currentIsValid
+    })
   }
 
   hashPassword(_: string): Effect.Effect<string> {
-    return Effect.succeed(this.hashedPassword)
+    const hashedPassword = this.hashedPassword
+    return Effect.gen(function*() {
+      const currentHashedPassword = yield* Ref.get(hashedPassword)
+      return currentHashedPassword
+    })
   }
 }
 
-export { LivePasswordService }
+const createPasswordService = (isValid: boolean, hashedPassword: string) =>
+  Effect.gen(function*() {
+    const isValidRef = yield* Ref.make(isValid)
+    const hashedPasswordRef = yield* Ref.make(hashedPassword)
+    return new LivePasswordService(isValidRef, hashedPasswordRef)
+  })
+
+export { createPasswordService }

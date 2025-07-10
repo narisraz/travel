@@ -1,16 +1,22 @@
 import type { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
-import { Effect } from "effect"
+import { Effect, Ref } from "effect"
 
 class LiveIdGenerator implements IdGenerator {
-  private id: string
+  constructor(private id: Ref.Ref<string>) {}
 
-  constructor(id: string) {
-    this.id = id
-  }
-
-  next(): Effect.Effect<string> {
-    return Effect.succeed(this.id)
+  next = (): Effect.Effect<string> => {
+    const id = this.id
+    return Effect.gen(function*() {
+      const currentId = yield* Ref.get(id)
+      return currentId.toString()
+    })
   }
 }
 
-export { LiveIdGenerator }
+const createIdGenerator = (id: string) =>
+  Effect.gen(function*() {
+    const ref = yield* Ref.make(id)
+    return new LiveIdGenerator(ref)
+  })
+
+export { createIdGenerator }
