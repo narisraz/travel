@@ -1,8 +1,10 @@
 import {
   createAccount,
+  EmailAlreadyTakenError,
   InvalidPasswordError,
   PasswordMismatchError
 } from "@/auth/application/use-cases/create-account.js"
+import type { User } from "@/auth/domain/entities/account.entity.js"
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
 import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
@@ -20,10 +22,12 @@ const hashedPassword = "hashed-password"
 const id = "id"
 const email = Effect.runSync(createEmail("test@test.com"))
 
-const dependencies = ({ isPasswordValid }: { isPasswordValid: boolean }) =>
+const dependencies = (
+  { initialAccounts, isPasswordValid }: { isPasswordValid: boolean; initialAccounts?: Array<User> }
+) =>
   Layer.mergeAll(
     Layer.effect(PasswordService, createPasswordService(isPasswordValid, hashedPassword)),
-    Layer.effect(AccountRepository, createAccountRepository([])),
+    Layer.effect(AccountRepository, createAccountRepository(initialAccounts ?? [])),
     Layer.effect(IdGenerator, createIdGenerator(id))
   )
 
@@ -97,6 +101,25 @@ describe("CreateAccount", () => {
         expect(error).toBeInstanceOf(InvalidPasswordError)
       }),
       Effect.provide(dependencies({ isPasswordValid: false })),
+      Effect.runPromise
+    ))
+
+  test("should not create an account if email is already taken", () =>
+    pipe(
+      Effect.gen(function*() {
+        const request = {
+          email,
+          password: validPassword,
+          confirmPassword: validPassword
+        }
+
+        const error = yield* createAccount(request).pipe(Effect.flip)
+
+        expect(error).toBeInstanceOf(EmailAlreadyTakenError)
+      }),
+      Effect.provide(
+        dependencies({ isPasswordValid: true, initialAccounts: [{ id, email, password: hashedPassword }] })
+      ),
       Effect.runPromise
     ))
 })

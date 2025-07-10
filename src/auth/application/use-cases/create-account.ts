@@ -7,7 +7,7 @@ import type { Email } from "@/auth/domain/value-objects/Email.js"
 import { Data, Effect } from "effect"
 
 export class InvalidPasswordError extends Data.TaggedError("InvalidPasswordError")<object> {}
-
+export class EmailAlreadyTakenError extends Data.TaggedError("EmailAlreadyTakenError")<object> {}
 export class PasswordMismatchError extends Data.TaggedError("PasswordMismatchError")<object> {}
 
 type CreateAccountRequest = {
@@ -18,13 +18,18 @@ type CreateAccountRequest = {
 
 type CreateAccountResult = Effect.Effect<
   User,
-  InvalidPasswordError | PasswordMismatchError,
+  InvalidPasswordError | PasswordMismatchError | EmailAlreadyTakenError,
   PasswordService | IdGenerator | AccountRepository
 >
 
 function createAccount(request: CreateAccountRequest): CreateAccountResult {
   return Effect.gen(function*() {
     const { confirmPassword, email, password } = request
+
+    const accountRepository = yield* AccountRepository
+    const account = yield* accountRepository.findByEmail(email)
+
+    yield* Effect.fail(new EmailAlreadyTakenError({})).pipe(Effect.unless(() => account === null))
 
     const passwordService = yield* PasswordService
     const isPasswordValid = yield* passwordService.validatePassword(password)
@@ -38,7 +43,6 @@ function createAccount(request: CreateAccountRequest): CreateAccountResult {
     const hashedPassword = yield* passwordService.hashPassword(password)
     const user = createUser(id, email, hashedPassword).pipe(Effect.runSync)
 
-    const accountRepository = yield* AccountRepository
     yield* accountRepository.save(user)
 
     return user
