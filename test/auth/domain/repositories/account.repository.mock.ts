@@ -1,5 +1,6 @@
 import type { User } from "@/auth/domain/entities/account.entity.js"
 import type { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
+import type { Email } from "@/auth/domain/value-objects/Email.js"
 import { Effect, Ref } from "effect"
 
 class LiveAccountRepository implements AccountRepository {
@@ -14,6 +15,14 @@ class LiveAccountRepository implements AccountRepository {
 
   getAll(): Effect.Effect<Array<User>> {
     return Ref.get(this.accounts)
+  }
+
+  findByEmail = (email: Email) => {
+    const accountsRef = this.accounts
+    return Effect.gen(function*() {
+      const accounts = yield* Ref.get(accountsRef)
+      return accounts.find((account) => account.email === email) || null
+    })
   }
 }
 
