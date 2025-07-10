@@ -38,7 +38,13 @@ describe("CreateAccount", () => {
   test("should create an account", () =>
     pipe(
       Effect.gen(function*() {
-        const result = yield* createAccount(email, validPassword, validPassword)
+        const request = {
+          email,
+          password: validPassword,
+          confirmPassword: validPassword
+        }
+
+        const result = yield* createAccount(request)
 
         expect(result).toStrictEqual({ id: "id", email, password: "hashed-password" })
       }),
@@ -49,22 +55,34 @@ describe("CreateAccount", () => {
   test("should not create an account if passwords do not match", () =>
     pipe(
       Effect.gen(function*() {
-        const result = yield* createAccount(email, validPassword, anotherValidPassword)
+        const request = {
+          email,
+          password: validPassword,
+          confirmPassword: anotherValidPassword
+        }
+
+        const result = yield* Effect.exit(createAccount(request))
 
         expect(result).toStrictEqual(Exit.fail(new PasswordMismatchError({})))
       }),
       Effect.provide(dependencies({ isPasswordValid: true })),
-      Effect.runPromiseExit
+      Effect.runPromise
     ))
 
   test("should not create an account if password is not valid", () =>
     pipe(
       Effect.gen(function*() {
-        const result = yield* createAccount(email, invalidPassword, invalidPassword)
+        const request = {
+          email,
+          password: invalidPassword,
+          confirmPassword: invalidPassword
+        }
+
+        const result = yield* Effect.exit(createAccount(request))
 
         expect(result).toStrictEqual(Exit.fail(new InvalidPasswordError({})))
       }),
       Effect.provide(dependencies({ isPasswordValid: false })),
-      Effect.runPromiseExit
+      Effect.runPromise
     ))
 })

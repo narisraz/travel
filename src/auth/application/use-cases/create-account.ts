@@ -1,3 +1,4 @@
+import type { User } from "@/auth/domain/entities/account.entity.js"
 import { createUser } from "@/auth/domain/entities/account.entity.js"
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
 import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
@@ -9,27 +10,38 @@ export class InvalidPasswordError extends Data.TaggedError("InvalidPasswordError
 
 export class PasswordMismatchError extends Data.TaggedError("PasswordMismatchError")<object> {}
 
-function createAccount(email: Email, password: string, confirmPassword: string) {
+type CreateAccountRequest = {
+  readonly email: Email
+  readonly password: string
+  readonly confirmPassword: string
+}
+
+type CreateAccountResult = Effect.Effect<
+  User,
+  InvalidPasswordError | PasswordMismatchError,
+  PasswordService | IdGenerator | AccountRepository
+>
+
+function createAccount(request: CreateAccountRequest): CreateAccountResult {
   return Effect.gen(function*() {
+    const { confirmPassword, email, password } = request
+
     const passwordService = yield* PasswordService
-
     const isPasswordValid = yield* passwordService.validatePassword(password)
-    if (!isPasswordValid) {
-      return yield* Effect.fail(new InvalidPasswordError({}))
-    }
 
-    if (password !== confirmPassword) {
-      return yield* Effect.fail(new PasswordMismatchError({}))
-    }
+    yield* Effect.fail(new InvalidPasswordError({})).pipe(Effect.unless(() => isPasswordValid))
+    yield* Effect.fail(new PasswordMismatchError({})).pipe(Effect.unless(() => password === confirmPassword))
 
     const idGenerator = yield* IdGenerator
     const id = yield* idGenerator.next()
 
     const hashedPassword = yield* passwordService.hashPassword(password)
-    const account = createUser(id, email, hashedPassword).pipe(Effect.runSync)
+    const user = createUser(id, email, hashedPassword).pipe(Effect.runSync)
 
     const accountRepository = yield* AccountRepository
-    return yield* accountRepository.save(account)
+    yield* accountRepository.save(user)
+
+    return user
   })
 }
 
