@@ -11,6 +11,8 @@ export const handleAuthErrors = (error: { _tag: string }) => {
       return { status: 404, message: "Account not found" }
     case "BadCredentialsError":
       return { status: 401, message: "Invalid credentials" }
+    case "EmailAlreadyTakenError":
+      return { status: 400, message: "Email already taken" }
     case "ParseError":
       return { status: 400, message: "Invalid email format" }
     default:
