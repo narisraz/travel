@@ -11,21 +11,23 @@ import { createEmail } from "@/auth/domain/value-objects/Email.js"
 import { describe, expect, test } from "@effect/vitest"
 import { Effect, Exit, Layer, pipe } from "effect"
 
+const validPassword = "password"
+const anotherValidPassword = "another-password"
+const invalidPassword = "invalid-password"
+const hashedPassword = "hashed-password"
+const id = "id"
 const email = Effect.runSync(createEmail("test@test.com"))
+
 const passwordService = (isValid: boolean) => ({
   validatePassword: (_: string) => Effect.succeed(isValid),
-  hashPassword: (_: string) => Effect.succeed("hashed-password")
+  hashPassword: (_: string) => Effect.succeed(hashedPassword)
 })
 const accountRepository = () => ({
   save: (account: User) => Effect.promise(() => Promise.resolve(account))
 })
 const idGenerator = () => ({
-  next: () => Effect.succeed("id")
+  next: () => Effect.succeed(id)
 })
-
-const validPassword = "password"
-const anotherValidPassword = "another-password"
-const invalidPassword = "invalid-password"
 
 const dependencies = ({ isPasswordValid }: { isPasswordValid: boolean }) =>
   Layer.mergeAll(
@@ -46,7 +48,7 @@ describe("CreateAccount", () => {
 
         const result = yield* createAccount(request)
 
-        expect(result).toStrictEqual({ id: "id", email, password: "hashed-password" })
+        expect(result).toStrictEqual({ id, email, password: hashedPassword })
       }),
       Effect.provide(dependencies({ isPasswordValid: true })),
       Effect.runPromise
