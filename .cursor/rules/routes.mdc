@@ -1,0 +1,118 @@
+---
+globs: "*.routes.ts"
+description: "HTTP routes patterns and conventions"
+---
+
+# Routes HTTP
+
+## Conventions
+
+### Structure des Routes
+
+Les routes doivent être **légères** et ne contenir que :
+
+1. **Validation** des données d'entrée
+2. **Mapping** des paramètres
+3. **Appel** du contrôleur approprié
+4. **Retour** de la réponse HTTP
+
+### Template de Route
+
+```typescript
+// example.routes.ts
+import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
+import { z } from "zod";
+import { exampleController } from "./controllers/example.controller.js";
+
+const exampleRoutes = new Hono();
+
+// Schema de validation
+const exampleSchema = z.object({
+  field1: z.string(),
+  field2: z.number().optional(),
+});
+
+// Route
+exampleRoutes.post("/example", zValidator("json", exampleSchema), async (c) => {
+  const data = c.req.valid("json");
+
+  const result = await exampleController(data);
+
+  return c.json(result.response, result.status as any);
+});
+
+export { exampleRoutes };
+```
+
+## Règles Importantes
+
+### 1. Validation
+
+- ✅ Utiliser `zod` pour valider les données d'entrée
+- ✅ Définir des schémas stricts et réutilisables
+- ✅ Valider les paramètres, body, query params
+
+### 2. Mapping des Données
+
+- ✅ Extraire les données validées avec `c.req.valid()`
+- ✅ Passer les données directement au contrôleur
+- ❌ Ne pas transformer les données dans les routes
+
+### 3. Appel des Contrôleurs
+
+- ✅ Importer les contrôleurs depuis `./controllers/`
+- ✅ Utiliser les chemins absolus avec `@/` pour les imports
+- ✅ Appeler directement le contrôleur avec `await`
+
+### 4. Gestion des Réponses
+
+- ✅ Retourner `c.json(result.response, result.status)`
+- ❌ Ne pas traiter les erreurs dans les routes
+- ❌ Ne pas formater les réponses dans les routes
+
+### 5. Organisation
+
+- ✅ Grouper les routes par domaine métier
+- ✅ Utiliser un fichier par groupe de routes
+- ✅ Exporter le router avec un nom explicite
+
+## Exemples de Schemas
+
+### Schema Simple
+
+```typescript
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+```
+
+### Schema Complexe
+
+```typescript
+const createUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  confirmPassword: z.string().min(8),
+  profile: z.object({
+    firstName: z.string(),
+    lastName: z.string(),
+    age: z.number().min(18).optional(),
+  }),
+});
+```
+
+### Schema avec Validation Personnalisée
+
+```typescript
+const passwordSchema = z
+  .object({
+    password: z.string().min(8),
+    confirmPassword: z.string().min(8),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Les mots de passe ne correspondent pas",
+    path: ["confirmPassword"],
+  });
+```

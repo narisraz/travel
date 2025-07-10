@@ -1,0 +1,61 @@
+---
+alwaysApply: true
+description: "HTTP architecture and routing patterns"
+---
+
+# Architecture HTTP
+
+## Structure des Dossiers
+
+```
+src/
+├── auth/
+│   ├── presentation/
+│   │   └── http/
+│   │       ├── controllers/          # Contrôleurs agnostiques
+│   │       ├── shared/              # Couches partagées
+│   │       └── *.routes.ts          # Routes spécifiques au framework
+```
+
+## Principes Architecturaux
+
+### 1. Découplage Framework
+
+- Les contrôleurs doivent être **agnostiques** du framework HTTP (Hono, Express, etc.)
+- Les routes ne contiennent que la logique de mapping HTTP
+- La logique métier reste dans les contrôleurs
+
+### 2. Séparation des Responsabilités
+
+- **Routes** : Validation, mapping HTTP, appel des contrôleurs
+- **Contrôleurs** : Logique métier, gestion des erreurs, formatage des réponses
+- **Couches partagées** : Dépendances communes (mocks, services)
+
+### 3. Conventions de Nommage
+
+- Routes : `*.routes.ts`
+- Contrôleurs : `*.controller.ts`
+- Couches partagées : `shared/`
+
+## Exemples d'Usage
+
+### Route (Framework-spécifique)
+
+```typescript
+// auth.routes.ts
+authRoutes.post("/register", zValidator("json", schema), async (c) => {
+  const data = c.req.valid("json");
+  const result = await registerController(data);
+  return c.json(result.response, result.status);
+});
+```
+
+### Contrôleur (Agnostique)
+
+```typescript
+// register.controller.ts
+export const registerController = async (request: RegisterRequest): Promise<RegisterResult> => {
+  // Logique métier ici
+  return { response: {...}, status: 201 }
+}
+```

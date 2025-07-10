@@ -1,0 +1,91 @@
+---
+globs: "*.controller.ts"
+description: "HTTP controller patterns and conventions"
+---
+
+# Contrôleurs HTTP
+
+## Conventions
+
+### Structure des Contrôleurs
+
+Chaque contrôleur doit exporter :
+
+1. **Interfaces TypeScript** pour Request, Response et Result
+2. **Fonction de contrôleur** agnostique du framework
+
+### Template de Contrôleur
+
+```typescript
+// example.controller.ts
+export interface ExampleRequest {
+  // Paramètres d'entrée
+}
+
+export interface ExampleResponse {
+  success: boolean;
+  data?: any;
+  error?: string;
+}
+
+export interface ExampleResult {
+  response: ExampleResponse;
+  status: number;
+}
+
+export const exampleController = async (
+  request: ExampleRequest
+): Promise<ExampleResult> => {
+  try {
+    // Logique métier avec Effect
+    return await Effect.gen(function* () {
+      // Traitement
+      return yield* businessLogic(request);
+    }).pipe(
+      Effect.provide(httpLayer),
+      Effect.match({
+        onFailure: (error) => ({
+          response: { success: false, error: error.message },
+          status: 400,
+        }),
+        onSuccess: (data) => ({
+          response: { success: true, data },
+          status: 200,
+        }),
+      }),
+      Effect.runPromise
+    );
+  } catch (error) {
+    return {
+      response: { success: false, error: "Internal server error" },
+      status: 500,
+    };
+  }
+};
+```
+
+## Règles Importantes
+
+### 1. Agnosticité Framework
+
+- ❌ Ne pas importer Hono, Express, etc. dans les contrôleurs
+- ✅ Utiliser uniquement des types TypeScript natifs
+- ✅ Retourner des objets avec `response` et `status`
+
+### 2. Gestion des Erreurs
+
+- ✅ Utiliser `Effect.match` pour gérer les erreurs
+- ✅ Retourner des codes de statut HTTP appropriés
+- ✅ Formater les erreurs de manière cohérente
+
+### 3. Dépendances
+
+- ✅ Utiliser la couche partagée `shared/http-layer.ts`
+- ✅ Injecter les dépendances via Effect Layer
+- ❌ Ne pas créer de dépendances directes dans les contrôleurs
+
+### 4. Types TypeScript
+
+- ✅ Exporter toutes les interfaces publiques
+- ✅ Utiliser des types stricts pour les paramètres
+- ✅ Documenter les interfaces avec JSDoc si nécessaire
