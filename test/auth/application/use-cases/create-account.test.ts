@@ -8,7 +8,7 @@ import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { createEmail } from "@/auth/domain/value-objects/Email.js"
 import { describe, expect, test } from "@effect/vitest"
-import { Effect, Exit, Layer, pipe } from "effect"
+import { Effect, Layer, pipe } from "effect"
 import { createAccountRepository } from "../../domain/repositories/account.repository.mock.js"
 import { createIdGenerator } from "../../domain/services/id-generator.service.mock.js"
 import { createPasswordService } from "../../domain/services/password.service.mock.js"
@@ -38,6 +38,7 @@ describe("CreateAccount", () => {
         }
 
         const result = yield* createAccount(request)
+
         expect(result).toStrictEqual({ id, email, password: hashedPassword })
       }),
       Effect.provide(dependencies({ isPasswordValid: true })),
@@ -74,11 +75,9 @@ describe("CreateAccount", () => {
           confirmPassword: anotherValidPassword
         }
 
-        const result = yield* Effect.exit(createAccount(request))
+        const error = yield* createAccount(request).pipe(Effect.flip)
 
-        Exit.mapError(result, (error) => {
-          expect(error).instanceOf(PasswordMismatchError)
-        })
+        expect(error).toBeInstanceOf(PasswordMismatchError)
       }),
       Effect.provide(dependencies({ isPasswordValid: true })),
       Effect.runPromise
@@ -93,11 +92,9 @@ describe("CreateAccount", () => {
           confirmPassword: invalidPassword
         }
 
-        const result = yield* Effect.exit(createAccount(request))
+        const error = yield* createAccount(request).pipe(Effect.flip)
 
-        Exit.mapError(result, (error) => {
-          expect(error).instanceOf(InvalidPasswordError)
-        })
+        expect(error).toBeInstanceOf(InvalidPasswordError)
       }),
       Effect.provide(dependencies({ isPasswordValid: false })),
       Effect.runPromise
