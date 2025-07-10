@@ -8,13 +8,13 @@ const authRoutes = new Hono()
 
 // Validation schemas
 const createAccountSchema = z.object({
-  email: z.email(),
+  email: z.string().email(),
   password: z.string().min(8),
   confirmPassword: z.string().min(8)
 })
 
 const loginSchema = z.object({
-  email: z.email(),
+  email: z.string().email(),
   password: z.string().min(1)
 })
 

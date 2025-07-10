@@ -1,18 +1,14 @@
 import { Effect, Layer } from "effect"
 
-// Mock dependencies for HTTP context
-import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
+// Real implementation for HTTP context
 import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { TokenService } from "@/auth/domain/services/token.service.js"
+import { SQLiteAccountRepositoryLayer } from "@/auth/infrastructure/persistence/layer.js"
 
-// Mock layer for HTTP context (this should be replaced with actual implementations)
+// HTTP layer with SQLite implementation for AccountRepository and mocks for other services
 export const httpLayer = Layer.mergeAll(
-  Layer.succeed(AccountRepository, {
-    findByEmail: () => Effect.succeed(null),
-    getAll: () => Effect.succeed([]),
-    save: () => Effect.succeed(void 0)
-  } as any),
+  SQLiteAccountRepositoryLayer,
   Layer.succeed(IdGenerator, {
     next: () => Effect.succeed("mock-id")
   } as any),
