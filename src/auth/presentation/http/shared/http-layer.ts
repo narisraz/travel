@@ -1,17 +1,13 @@
 import { Effect, Layer } from "effect"
 
-// Real implementation for HTTP context
-import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { TokenService } from "@/auth/domain/services/token.service.js"
 import { SQLiteAccountRepositoryLayer } from "@/auth/infrastructure/persistence/layer.js"
+import { UuidIdGeneratorLayer } from "@/auth/infrastructure/services/id-generator.service.uuid.js"
 
-// HTTP layer with SQLite implementation for AccountRepository and mocks for other services
 export const httpLayer = Layer.mergeAll(
   SQLiteAccountRepositoryLayer,
-  Layer.succeed(IdGenerator, {
-    next: () => Effect.succeed("mock-id")
-  } as any),
+  UuidIdGeneratorLayer,
   Layer.succeed(PasswordService, {
     validatePassword: () => Effect.succeed(true),
     hashPassword: (password: string) => Effect.succeed(`hashed-${password}`)
