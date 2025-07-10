@@ -1,7 +1,7 @@
 import type { TokenService } from "@/auth/domain/services/token.service.js"
 import { TokenService as TokenServiceTag } from "@/auth/domain/services/token.service.js"
 import { Effect, Layer } from "effect"
-import * as jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken"
 
 export class JWTTokenService implements TokenService {
   private readonly secret = process.env.JWT_SECRET || "your-secret-key-change-in-production"
