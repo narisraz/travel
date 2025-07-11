@@ -7,6 +7,7 @@ export interface AccountRepository {
   save: (account: User) => Effect.Effect<void, never, never>
   getAll: () => Effect.Effect<Array<User>, never, never>
   findByEmail: (email: Email) => Effect.Effect<User | null, never, never>
+  update: (id: string, account: Partial<User>) => Effect.Effect<void, never, never>
 }
 
 export const AccountRepository = Context.GenericTag<AccountRepository>("AccountRepository")

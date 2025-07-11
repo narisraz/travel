@@ -49,6 +49,14 @@ export class SQLiteAccountRepository implements AccountRepository {
     }).pipe(
       Effect.catchAll(() => Effect.succeed(null))
     )
+
+  update = (id: string, account: Partial<User>): Effect.Effect<void, never, never> =>
+    Effect.try(() => {
+      const stmt = this.database.db.prepare(`
+        UPDATE users SET password = ? WHERE id = ?
+      `)
+      stmt.run(account.password, id)
+    }).pipe(Effect.catchAll(() => Effect.succeed(void 0)))
 }
 
 export const createSQLiteAccountRepository = (database: SQLiteDatabase): AccountRepository =>

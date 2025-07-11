@@ -24,6 +24,19 @@ class LiveAccountRepository implements AccountRepository {
       return accounts.find((account) => account.email === email) || null
     })
   }
+
+  update = (id: string, account: Partial<User>) => {
+    const accountsRef = this.accounts
+    return Effect.gen(function*() {
+      yield* Ref.update(
+        accountsRef,
+        (currentAccounts) =>
+          currentAccounts.map((currentAccount) =>
+            currentAccount.id === id ? { ...currentAccount, ...account } : currentAccount
+          )
+      )
+    })
+  }
 }
 
 const createAccountRepository = (accounts: Array<User>) =>
