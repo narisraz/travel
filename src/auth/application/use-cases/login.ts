@@ -1,11 +1,10 @@
+import { AccountNotFoundError } from "@/auth/domain/exceptions/account-not-found.error.js"
+import { BadCredentialsError } from "@/auth/domain/exceptions/bad-credentials.error.js"
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { TokenService } from "@/auth/domain/services/token.service.js"
 import type { Email } from "@/auth/domain/value-objects/Email.js"
-import { Data, Effect } from "effect"
-
-export class BadCredentialsError extends Data.TaggedError("BadCredentialsError")<object> {}
-export class AccountNotFoundError extends Data.TaggedError("AccountNotFoundError")<object> {}
+import { Effect } from "effect"
 
 type LoginRequest = {
   email: Email

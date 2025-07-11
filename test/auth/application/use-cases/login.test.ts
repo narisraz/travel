@@ -1,5 +1,7 @@
-import { AccountNotFoundError, BadCredentialsError, login } from "@/auth/application/use-cases/login.js"
+import { login } from "@/auth/application/use-cases/login.js"
 import type { User } from "@/auth/domain/entities/account.entity.js"
+import { AccountNotFoundError } from "@/auth/domain/exceptions/account-not-found.error.js"
+import { BadCredentialsError } from "@/auth/domain/exceptions/bad-credentials.error.js"
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { TokenService } from "@/auth/domain/services/token.service.js"

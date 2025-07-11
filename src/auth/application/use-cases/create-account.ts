@@ -1,14 +1,13 @@
 import type { User } from "@/auth/domain/entities/account.entity.js"
 import { createUser } from "@/auth/domain/entities/account.entity.js"
+import { EmailAlreadyTakenError } from "@/auth/domain/exceptions/email-already-taken.error.js"
+import { InvalidPasswordError } from "@/auth/domain/exceptions/invalid-password.error.js"
+import { PasswordMismatchError } from "@/auth/domain/exceptions/password-mismatch.error.js"
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
 import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import type { Email } from "@/auth/domain/value-objects/Email.js"
-import { Data, Effect } from "effect"
-
-export class InvalidPasswordError extends Data.TaggedError("InvalidPasswordError")<object> {}
-export class EmailAlreadyTakenError extends Data.TaggedError("EmailAlreadyTakenError")<object> {}
-export class PasswordMismatchError extends Data.TaggedError("PasswordMismatchError")<object> {}
+import { Effect } from "effect"
 
 type CreateAccountRequest = {
   readonly email: Email

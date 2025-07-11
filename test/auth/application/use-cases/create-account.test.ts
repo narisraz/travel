@@ -1,10 +1,8 @@
-import {
-  createAccount,
-  EmailAlreadyTakenError,
-  InvalidPasswordError,
-  PasswordMismatchError
-} from "@/auth/application/use-cases/create-account.js"
+import { createAccount } from "@/auth/application/use-cases/create-account.js"
 import type { User } from "@/auth/domain/entities/account.entity.js"
+import { EmailAlreadyTakenError } from "@/auth/domain/exceptions/email-already-taken.error.js"
+import { InvalidPasswordError } from "@/auth/domain/exceptions/invalid-password.error.js"
+import { PasswordMismatchError } from "@/auth/domain/exceptions/password-mismatch.error.js"
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
 import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
