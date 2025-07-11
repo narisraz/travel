@@ -1,4 +1,4 @@
-import type { TokenService } from "@/auth/domain/services/token.service.js"
+import type { TokenService, TokenValidationResult } from "@/auth/domain/services/token.service.js"
 import { TokenService as TokenServiceTag } from "@/auth/domain/services/token.service.js"
 import { Effect, Layer } from "effect"
 import jwt from "jsonwebtoken"
@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken"
 export class JWTTokenService implements TokenService {
   private readonly secret = process.env.JWT_SECRET || "your-secret-key-change-in-production"
   private readonly expiresIn = "24h"
+  private readonly refreshThresholdMinutes = 5
 
   generateToken = (accountId: string): Effect.Effect<string, never, never> =>
     Effect.try(() => {
@@ -22,13 +23,17 @@ export class JWTTokenService implements TokenService {
       Effect.catchAll(() => Effect.succeed(""))
     )
 
-  // Méthode utilitaire pour vérifier un token (peut être utilisée dans les middlewares)
-  verifyToken = (token: string): Effect.Effect<{ accountId: string }, never, never> =>
+  validateToken = (token: string): Effect.Effect<TokenValidationResult, never, never> =>
     Effect.try(() => {
-      const decoded = jwt.verify(token, this.secret) as { accountId: string }
-      return { accountId: decoded.accountId }
+      const decoded = jwt.verify(token, this.secret) as { accountId: string; exp: number }
+
+      const now = Math.floor(Date.now() / 1000)
+      const timeUntilExpiry = decoded.exp - now
+      const shouldRefresh = timeUntilExpiry < (this.refreshThresholdMinutes * 60)
+
+      return { accountId: decoded.accountId, isValid: true, shouldRefresh }
     }).pipe(
-      Effect.catchAll(() => Effect.succeed({ accountId: "" }))
+      Effect.catchAll(() => Effect.succeed({ accountId: "", isValid: false, shouldRefresh: false }))
     )
 }
 
