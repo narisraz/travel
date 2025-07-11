@@ -1,7 +1,7 @@
 import type { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
 import { Effect, Ref } from "effect"
 
-class LiveIdGenerator implements IdGenerator {
+class MockIdGenerator implements IdGenerator {
   constructor(private id: Ref.Ref<string>) {}
 
   next = (): Effect.Effect<string> => {
@@ -13,10 +13,10 @@ class LiveIdGenerator implements IdGenerator {
   }
 }
 
-const createIdGenerator = (id: string) =>
+const createMockIdGenerator = (id: string) =>
   Effect.gen(function*() {
     const ref = yield* Ref.make(id)
-    return new LiveIdGenerator(ref)
+    return new MockIdGenerator(ref)
   })
 
-export { createIdGenerator }
+export { createMockIdGenerator }

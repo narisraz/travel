@@ -3,7 +3,7 @@ import type { AccountRepository } from "@/auth/domain/repositories/account.repos
 import type { Email } from "@/auth/domain/value-objects/Email.js"
 import { Effect, Ref } from "effect"
 
-class LiveAccountRepository implements AccountRepository {
+class MockAccountRepository implements AccountRepository {
   constructor(private accounts: Ref.Ref<Array<User>>) {}
 
   save = (account: User) => {
@@ -39,10 +39,10 @@ class LiveAccountRepository implements AccountRepository {
   }
 }
 
-const createAccountRepository = (accounts: Array<User>) =>
+const createMockAccountRepository = (accounts: Array<User>) =>
   Effect.gen(function*() {
     const ref = yield* Ref.make(accounts)
-    return new LiveAccountRepository(ref)
+    return new MockAccountRepository(ref)
   })
 
-export { createAccountRepository }
+export { createMockAccountRepository }

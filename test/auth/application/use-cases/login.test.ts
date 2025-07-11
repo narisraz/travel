@@ -8,9 +8,9 @@ import { TokenService } from "@/auth/domain/services/token.service.js"
 import { createEmail } from "@/auth/domain/value-objects/Email.js"
 import { Effect, Layer, pipe } from "effect"
 import { describe, expect, test } from "vitest"
-import { createAccountRepository } from "../../domain/repositories/account.repository.mock.js"
-import { createPasswordService } from "../../domain/services/password.service.mock.js"
-import { createTokenService } from "../../domain/services/token.service.mock.js"
+import { createMockAccountRepository } from "../../domain/repositories/account.repository.mock.js"
+import { createMockPasswordService } from "../../domain/services/password.service.mock.js"
+import { createMockTokenService } from "../../domain/services/token.service.mock.js"
 
 const password = "password"
 const hashedPassword = "hashed-password"
@@ -27,9 +27,9 @@ const account: User = {
 
 const dependencies = (hashedPassword: string) =>
   Layer.mergeAll(
-    Layer.effect(PasswordService, createPasswordService(true, hashedPassword)),
-    Layer.effect(AccountRepository, createAccountRepository([account])),
-    Layer.effect(TokenService, createTokenService())
+    Layer.effect(PasswordService, createMockPasswordService(true, hashedPassword)),
+    Layer.effect(AccountRepository, createMockAccountRepository([account])),
+    Layer.effect(TokenService, createMockTokenService())
   )
 
 describe("Login", () => {

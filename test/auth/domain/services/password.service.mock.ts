@@ -1,7 +1,7 @@
 import type { PasswordService } from "@/auth/domain/services/password.service.js"
 import { Effect, Ref } from "effect"
 
-class LivePasswordService implements PasswordService {
+class MockPasswordService implements PasswordService {
   constructor(private isValid: Ref.Ref<boolean>, private hashedPassword: Ref.Ref<string>) {}
 
   validatePassword(_: string): Effect.Effect<boolean> {
@@ -29,11 +29,11 @@ class LivePasswordService implements PasswordService {
   }
 }
 
-const createPasswordService = (isValid: boolean, hashedPassword: string) =>
+const createMockPasswordService = (isValid: boolean, hashedPassword: string) =>
   Effect.gen(function*() {
     const isValidRef = yield* Ref.make(isValid)
     const hashedPasswordRef = yield* Ref.make(hashedPassword)
-    return new LivePasswordService(isValidRef, hashedPasswordRef)
+    return new MockPasswordService(isValidRef, hashedPasswordRef)
   })
 
-export { createPasswordService }
+export { createMockPasswordService }

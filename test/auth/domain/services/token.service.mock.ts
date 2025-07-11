@@ -1,7 +1,7 @@
 import type { TokenService } from "@/auth/domain/services/token.service.js"
 import { Effect } from "effect"
 
-class TokenServiceMock implements TokenService {
+class MockTokenService implements TokenService {
   generateToken = (accountId: string) => Effect.succeed(`token-${accountId}`)
   validateToken = (_: string) =>
     Effect.succeed({
@@ -11,4 +11,4 @@ class TokenServiceMock implements TokenService {
     })
 }
 
-export const createTokenService = () => Effect.succeed(new TokenServiceMock())
+export const createMockTokenService = () => Effect.succeed(new MockTokenService())
