@@ -1,7 +1,6 @@
 import { loginController } from "@/auth/presentation/http/controllers/login.controller.js"
 import { registerController } from "@/auth/presentation/http/controllers/register.controller.js"
 import { resetPasswordController } from "@/auth/presentation/http/controllers/reset-password.controller.js"
-import { refreshTokenMiddleware } from "@/auth/presentation/http/shared/refresh-token.middleware.js"
 import { zValidator } from "@hono/zod-validator"
 import { Hono } from "hono"
 import { z } from "zod"
@@ -25,9 +24,6 @@ const resetPasswordSchema = z.object({
   password: z.string().min(8),
   confirmPassword: z.string().min(8)
 })
-
-// Global middleware
-authRoutes.use("*", refreshTokenMiddleware())
 
 // Routes
 authRoutes.post("/register", zValidator("json", createAccountSchema), async (c) => {
