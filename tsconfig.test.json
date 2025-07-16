@@ -1,13 +1,16 @@
 {
   "extends": "./tsconfig.base.json",
   "include": ["test"],
-  "references": [
-    { "path": "tsconfig.src.json" }
-  ],
+  "references": [{ "path": "tsconfig.src.json" }],
   "compilerOptions": {
     "types": ["node"],
     "tsBuildInfoFile": ".tsbuildinfo/test.tsbuildinfo",
     "rootDir": "test",
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@test/*": ["./test/*"]
+    },
+    "typeRoots": ["./build/dts", "./node_modules/@types"]
   }
 }

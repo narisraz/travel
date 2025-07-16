@@ -6,9 +6,9 @@ import { AccountRepository } from "@/auth/domain/repositories/account.repository
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { createEmail } from "@/auth/domain/value-objects/Email.js"
 import { describe, expect, test } from "@effect/vitest"
+import { createMockAccountRepository } from "@test/auth/domain/repositories/account.repository.mock.js"
+import { createMockPasswordService } from "@test/auth/domain/services/password.service.mock.js"
 import { Effect, Layer, pipe } from "effect"
-import { createMockAccountRepository } from "../../domain/repositories/account.repository.mock.js"
-import { createMockPasswordService } from "../../domain/services/password.service.mock.js"
 
 const email = Effect.runSync(createEmail("test@test.com"))
 const notFoundEmail = Effect.runSync(createEmail("not-found@test.com"))
