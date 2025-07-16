@@ -27,6 +27,27 @@ export const createDatabase = (path: string = ":memory:"): Effect.Effect<SQLiteD
         db.exec(`
           CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
         `)
+
+        // Créer la table hotels si elle n'existe pas
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS hotels (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            auth_id TEXT NOT NULL,
+            address_street TEXT,
+            address_zip_code TEXT,
+            address_city TEXT,
+            address_country TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (auth_id) REFERENCES users(id)
+          )
+        `)
+
+        // Créer un index sur auth_id pour optimiser les recherches par utilisateur
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_hotels_auth_id ON hotels(auth_id)
+        `)
       })
 
     const close = () =>
