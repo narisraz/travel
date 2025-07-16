@@ -1,5 +1,5 @@
-import type { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
-import { IdGenerator as IdGeneratorTag } from "@/auth/domain/services/id-generator.service.js"
+import type { IdGenerator } from "@/shared/domain/services/id-generator.service.js"
+import { IdGenerator as IdGeneratorTag } from "@/shared/domain/services/id-generator.service.js"
 import { Effect, Layer } from "effect"
 import { v4 as uuidv4 } from "uuid"
 

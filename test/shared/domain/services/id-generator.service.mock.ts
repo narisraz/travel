@@ -1,4 +1,4 @@
-import type { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
+import type { IdGenerator } from "@/shared/domain/services/id-generator.service.js"
 import { Effect, Ref } from "effect"
 
 class MockIdGenerator implements IdGenerator {

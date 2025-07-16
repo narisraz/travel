@@ -6,7 +6,7 @@ export * as accountEntity from "./auth/domain/entities/account.entity.js"
 
 export * as accountRepository from "./auth/domain/repositories/account.repository.js"
 
-export * as idGeneratorService from "./auth/domain/services/id-generator.service.js"
+export * as idGeneratorService from "./shared/domain/services/id-generator.service.js"
 
 export * as passwordService from "./auth/domain/services/password.service.js"
 

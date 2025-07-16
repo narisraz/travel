@@ -4,7 +4,7 @@ import { EmailAlreadyTakenError } from "@/auth/domain/exceptions/email-already-t
 import { InvalidPasswordError } from "@/auth/domain/exceptions/invalid-password.error.js"
 import { PasswordMismatchError } from "@/auth/domain/exceptions/password-mismatch.error.js"
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
-import { IdGenerator } from "@/auth/domain/services/id-generator.service.js"
+import { IdGenerator } from "@/shared/domain/services/id-generator.service.js"
 import { PasswordService } from "@/auth/domain/services/password.service.js"
 import type { Email } from "@/auth/domain/value-objects/Email.js"
 import { Effect } from "effect"
