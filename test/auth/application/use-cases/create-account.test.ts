@@ -9,9 +9,9 @@ import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { createEmail } from "@/auth/domain/value-objects/Email.js"
 import { describe, expect, test } from "@effect/vitest"
 import { Effect, Layer, pipe } from "effect"
-import { createAccountRepository } from "../../domain/repositories/account.repository.mock.js"
-import { createIdGenerator } from "../../domain/services/id-generator.service.mock.js"
-import { createPasswordService } from "../../domain/services/password.service.mock.js"
+import { createMockAccountRepository } from "../../domain/repositories/account.repository.mock.js"
+import { createMockIdGenerator } from "../../domain/services/id-generator.service.mock.js"
+import { createMockPasswordService } from "../../domain/services/password.service.mock.js"
 
 const validPassword = "password"
 const anotherValidPassword = "another-password"
@@ -24,9 +24,9 @@ const dependencies = (
   { initialAccounts, isPasswordValid }: { isPasswordValid: boolean; initialAccounts?: Array<User> }
 ) =>
   Layer.mergeAll(
-    Layer.effect(PasswordService, createPasswordService(isPasswordValid, hashedPassword)),
-    Layer.effect(AccountRepository, createAccountRepository(initialAccounts ?? [])),
-    Layer.effect(IdGenerator, createIdGenerator(id))
+    Layer.effect(PasswordService, createMockPasswordService(isPasswordValid, hashedPassword)),
+    Layer.effect(AccountRepository, createMockAccountRepository(initialAccounts ?? [])),
+    Layer.effect(IdGenerator, createMockIdGenerator(id))
   )
 
 describe("CreateAccount", () => {

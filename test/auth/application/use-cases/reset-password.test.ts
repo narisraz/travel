@@ -7,8 +7,8 @@ import { PasswordService } from "@/auth/domain/services/password.service.js"
 import { createEmail } from "@/auth/domain/value-objects/Email.js"
 import { describe, expect, test } from "@effect/vitest"
 import { Effect, Layer, pipe } from "effect"
-import { createAccountRepository } from "../../domain/repositories/account.repository.mock.js"
-import { createPasswordService } from "../../domain/services/password.service.mock.js"
+import { createMockAccountRepository } from "../../domain/repositories/account.repository.mock.js"
+import { createMockPasswordService } from "../../domain/services/password.service.mock.js"
 
 const email = Effect.runSync(createEmail("test@test.com"))
 const notFoundEmail = Effect.runSync(createEmail("not-found@test.com"))
@@ -22,8 +22,8 @@ const dependencies = (
   { hashedPassword = "hashed-password", isValid = true }: { hashedPassword?: string; isValid?: boolean } = {}
 ) =>
   Layer.mergeAll(
-    Layer.effect(AccountRepository, createAccountRepository([account])),
-    Layer.effect(PasswordService, createPasswordService(isValid, hashedPassword))
+    Layer.effect(AccountRepository, createMockAccountRepository([account])),
+    Layer.effect(PasswordService, createMockPasswordService(isValid, hashedPassword))
   )
 
 describe("ResetPassword", () => {
