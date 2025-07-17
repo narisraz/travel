@@ -1,5 +1,6 @@
 import { authRoutes } from "@/auth/presentation/http/auth.routes.js"
 import { refreshTokenMiddleware } from "@/auth/presentation/http/shared/refresh-token.middleware.js"
+import { profilesRoutes } from "@/profiles/presentation/http/profiles.routes.js"
 import { Hono } from "hono"
 import { cors } from "hono/cors"
 import { logger } from "hono/logger"
@@ -23,6 +24,7 @@ app.get("/health", (c) => {
 
 // API routes
 app.route("/api/auth", authRoutes)
+app.route("/api/profiles", profilesRoutes)
 
 // 404 handler
 app.notFound((c) => {
