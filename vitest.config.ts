@@ -6,7 +6,8 @@ export default defineConfig({
   test: {
     setupFiles: [path.join(__dirname, "setupTests.ts")],
     include: ["./test/**/*.test.ts"],
-    globals: true
+    globals: true,
+    testTimeout: 30000 // Augmenter le timeout pour les tests d'intégration
   },
   resolve: {
     alias: {
