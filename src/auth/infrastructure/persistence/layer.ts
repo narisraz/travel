@@ -1,23 +1,13 @@
 import { AccountRepository } from "@/auth/domain/repositories/account.repository.js"
 import { Effect, Layer } from "effect"
-import { createSQLiteAccountRepository } from "./account.repository.sqlite.js"
-import { createDatabase } from "./database.js"
+import { createPostgreSQLAccountRepository } from "./account.repository.postgresql.js"
+import { createPrismaDatabase } from "./prisma.js"
 
-export const SQLiteAccountRepositoryLayer = Layer.effect(
+export const PostgreSQLAccountRepositoryLayer = Layer.effect(
   AccountRepository,
   Effect.gen(function*() {
-    const database = yield* createDatabase()
+    const database = yield* createPrismaDatabase()
     yield* database.initialize()
-    return createSQLiteAccountRepository(database)
+    return createPostgreSQLAccountRepository(database)
   })
 )
-
-export const SQLiteAccountRepositoryLayerWithPath = (dbPath: string) =>
-  Layer.effect(
-    AccountRepository,
-    Effect.gen(function*() {
-      const database = yield* createDatabase(dbPath)
-      yield* database.initialize()
-      return createSQLiteAccountRepository(database)
-    })
-  )

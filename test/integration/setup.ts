@@ -1,9 +1,10 @@
+import { createPrismaDatabase } from "@/auth/infrastructure/persistence/prisma.js"
+import type { StartedPostgreSqlContainer } from "@testcontainers/postgresql"
+import { PostgreSqlContainer } from "@testcontainers/postgresql"
 import { Effect } from "effect"
-import type { StartedTestContainer } from "testcontainers"
-import { GenericContainer, Wait } from "testcontainers"
 
 export interface TestDatabase {
-  readonly container: StartedTestContainer
+  readonly container: StartedPostgreSqlContainer
   readonly connectionString: string
   readonly cleanup: () => Effect.Effect<void, never, never>
 }
@@ -11,20 +12,14 @@ export interface TestDatabase {
 export const createTestDatabase = (): Effect.Effect<TestDatabase, never, never> =>
   Effect.gen(function*() {
     const container = yield* Effect.promise(() =>
-      new GenericContainer("postgres:15-alpine")
-        .withExposedPorts(5432)
-        .withEnvironment({
-          POSTGRES_DB: "travel_test",
-          POSTGRES_USER: "test_user",
-          POSTGRES_PASSWORD: "test_password"
-        })
-        .withWaitStrategy(Wait.forLogMessage("database system is ready to accept connections"))
+      new PostgreSqlContainer("postgres:15-alpine")
+        .withDatabase("travel_test")
+        .withUsername("postgres")
+        .withPassword("postgres")
         .start()
     )
 
-    const host = container.getHost()
-    const port = container.getMappedPort(5432)
-    const connectionString = `postgresql://test_user:test_password@${host}:${port}/travel_test`
+    const connectionString = container.getConnectionUri()
 
     const cleanup = () => Effect.promise(() => container.stop())
 
@@ -36,8 +31,26 @@ export const createTestDatabase = (): Effect.Effect<TestDatabase, never, never> 
   })
 
 export const setupTestDatabase = (connectionString: string): Effect.Effect<void, never, never> =>
-  Effect.sync(() => {
-    // Ici nous pourrions initialiser le schéma de base de données
-    // Pour l'instant, nous utilisons SQLite en mémoire pour les tests
-    console.log(`Test database ready at: ${connectionString}`)
+  Effect.gen(function*() {
+    // Sauvegarder l'URL de base de données originale
+    const originalDatabaseUrl = process.env.DATABASE_URL
+
+    // Définir l'URL de test
+    process.env.DATABASE_URL = connectionString
+
+    try {
+      // Créer et initialiser la base de données de test
+      const database = yield* createPrismaDatabase()
+      yield* database.initialize()
+      yield* database.close()
+
+      console.log(`✅ Test database initialized at: ${connectionString}`)
+    } finally {
+      // Restaurer l'URL originale
+      if (originalDatabaseUrl) {
+        process.env.DATABASE_URL = originalDatabaseUrl
+      } else {
+        delete process.env.DATABASE_URL
+      }
+    }
   })
