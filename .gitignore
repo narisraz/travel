@@ -16,3 +16,5 @@ scratchpad/*
 .env.test.local
 .env.production.local
 *.db
+
+/generated/prisma
