@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -32,7 +32,7 @@ model Hotel {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Address fields (embedded as JSON in SQLite)
+  // Address fields (embedded as JSON in PostgreSQL)
   street   String?
   zipCode  String?
   city     String?
