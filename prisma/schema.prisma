@@ -1,0 +1,45 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id       String  @id @default(uuid())
+  email    String  @unique
+  password String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  hotels Hotel[]
+
+  @@map("accounts")
+}
+
+model Hotel {
+  id          String  @id @default(uuid())
+  name        String
+  description String
+  authId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Address fields (embedded as JSON in SQLite)
+  street   String?
+  zipCode  String?
+  city     String?
+  country  String?
+
+  // Relations
+  account Account @relation(fields: [authId], references: [id], onDelete: Cascade)
+
+  @@map("hotels")
+}
